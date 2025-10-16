@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataCore", "DynamicDataCore\DynamicDataCore.csproj", "{EA89ADEA-03A1-4903-BDAB-A84AE759C5D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataCore.Tests", "DynamicDataCore.Tests\DynamicDataCore.Tests.csproj", "{525D044E-A194-4335-B73E-3480802D4BBB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EA89ADEA-03A1-4903-BDAB-A84AE759C5D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA89ADEA-03A1-4903-BDAB-A84AE759C5D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA89ADEA-03A1-4903-BDAB-A84AE759C5D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA89ADEA-03A1-4903-BDAB-A84AE759C5D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{525D044E-A194-4335-B73E-3480802D4BBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{525D044E-A194-4335-B73E-3480802D4BBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{525D044E-A194-4335-B73E-3480802D4BBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{525D044E-A194-4335-B73E-3480802D4BBB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {923F4E64-4DE8-4A78-837A-4716FB6D134A}
+	EndGlobalSection
+EndGlobal
