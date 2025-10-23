@@ -1,4 +1,6 @@
-﻿namespace DynamicDataCore.Common.Helpers
+﻿using System;
+
+namespace DynamicDataCore.Common.Helpers
 {
     public static class ExceptionHelper
     {

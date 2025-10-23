@@ -1,16 +1,37 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using DynamicDataCore.Abstractions;
 using DynamicDataCore.Common.Response;
 using Microsoft.EntityFrameworkCore;
 
 namespace DynamicDataCore.Implementation
 {
+
+    /// <summary>
+    /// Description: Provides the default Entity Framework implementation of the <see cref="IGenericRepository{T}"/>.
+    /// <para></para>
+    /// This class encapsulates standard CRUD operations, LINQ-based queries, and paginated (lazy) retrievals
+    /// while maintaining consistent error handling and structured operation results.
+    /// <para></para>
+    /// <author>Created By: César Adolfo Solís Alvarez (CSOLIS).</author>
+    /// <para></para>
+    /// <since>Creation Date: 17/10/2025</since>
+    /// </summary>
+    /// <typeparam name="T">Entity type managed by this repository implementation.</typeparam>
     public class GenericRepositoryImpl<T> : IGenericRepository<T> where T : class
     {
 
         protected readonly IAppDbContext _context;
         protected readonly DbSet<T> _dbSet;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenericRepositoryImpl{T}"/> class.
+        /// </summary>
+        /// <param name="context">Database context implementing <see cref="IAppDbContext"/>.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the provided context is null.</exception>
         public GenericRepositoryImpl(IAppDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -69,6 +90,54 @@ namespace DynamicDataCore.Implementation
         {
             var query = asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
             return predicate != null ? query.Where(predicate) : query;
+        }
+
+        /// <summary>
+        /// Retrieves a paginated (lazy) collection of entities with optional filtering.
+        /// </summary>
+        /// <param name="page">The current page number (default = 1).</param>
+        /// <param name="perPage">Number of entities per page (default = 30).</param>
+        /// <param name="predicate">Optional LINQ predicate to filter results.</param>
+        /// <param name="asNoTracking">Indicates whether EF tracking is disabled for query optimization.</param>
+        /// <returns>An <see cref="OperationResult{T}"/> containing a paginated dataset and metadata.</returns>
+        public async Task<OperationResult<IEnumerable<T>>> RetrievePagedAsync(
+            int page = 1,
+            int perPage = 30,
+            Expression<Func<T, bool>>? predicate = null,
+            bool asNoTracking = true)
+        {
+            try
+            {
+                var query = asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+
+                if (predicate != null)
+                    query = query.Where(predicate);
+
+                var total = await query.CountAsync();
+                var skip = (page - 1) * perPage;
+                var data = await query.Skip(skip).Take(perPage).ToListAsync();
+
+                var pagination = new PaginationMetadata
+                {
+                    CurrentPage = page,
+                    PerPage = perPage,
+                    Total = total,
+                    LastPage = (int)Math.Ceiling(total / (double)perPage),
+                    From = skip + 1,
+                    To = skip + data.Count
+                };
+
+                return OperationResult<IEnumerable<T>>.Ok(
+                    data,
+                    message: "Paged retrieval successful.",
+                    pagination: pagination,
+                    isPaged: true
+                );
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<IEnumerable<T>>.Fail("Error retrieving paginated entities.", ex);
+            }
         }
 
         // 🔹 Inserción

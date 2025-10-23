@@ -1,4 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 using DynamicDataCore.Abstractions;
 using DynamicDataCore.Common.Response;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +10,16 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DynamicDataCore.Implementation
 {
+
+    /// <summary>
+    /// Description: Provides a concrete implementation of the <see cref="IUnitOfWork"/> interface,
+    /// coordinating multiple repository operations within a single transactional scope and
+    /// ensuring atomic persistence through Entity Framework Core.
+    /// <para></para>
+    /// <author>Created By: César Adolfo Solís Alvarez (CSOLIS).</author>
+    /// <para></para>
+    /// <since>Creation Date: 17/10/2025</since>
+    /// </summary>
     public class UnitOfWorkImpl(IAppDbContext context) : IUnitOfWork, IDisposable
     {
 
@@ -14,6 +28,11 @@ namespace DynamicDataCore.Implementation
         private bool _disposed;
         private readonly Dictionary<Type, object> _repositories = [];
 
+        /// <summary>
+        /// Description: Retrieves a generic repository instance for the specified entity type.
+        /// </summary>
+        /// <typeparam name="T">The entity type associated with the repository.</typeparam>
+        /// <returns>An instance of <see cref="IGenericRepository{T}"/>.</returns>
         public IGenericRepository<T> Repository<T>() where T : class
         {
             if (_repositories.ContainsKey(typeof(T)))
@@ -24,33 +43,51 @@ namespace DynamicDataCore.Implementation
             return repo;
         }
 
+        /// <summary>
+        /// Description: Indicates whether there is an active transaction currently in progress.
+        /// </summary>
         public bool HasActiveTransaction => _transaction != null;
 
+        /// <summary>
+        /// Description: Begins a new database transaction asynchronously.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when an active transaction already exists.</exception>
         public async Task BeginTransactionAsync()
         {
             if (_transaction != null)
-                throw new InvalidOperationException("Ya existe una transacción activa.");
+                throw new InvalidOperationException("An active transaction already exists.");
 
             if (_context is DbContext dbContext)
             {
-                // EF Core solo permite un parámetro: IsolationLevel
                 _transaction = await dbContext.Database.BeginTransactionAsync();
             }
             else
             {
-                throw new InvalidOperationException("No se pudo iniciar la transacción. El contexto no es DbContext.");
+                throw new InvalidOperationException("Unable to start transaction. The provided context is not a valid DbContext.");
             }
         }
 
+        /// <summary>
+        /// Description: Commits the active transaction asynchronously,
+        /// saving all pending changes atomically.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous commit operation.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when there is no active transaction.</exception>
         public async Task CommitTransactionAsync()
         {
             if (_transaction == null)
-                throw new InvalidOperationException("No existe una transacción activa.");
+                throw new InvalidOperationException("No active transaction to commit.");
 
             await _context.SaveChangesAsync();
             await DisposeTransactionAsync();
         }
 
+        /// <summary>
+        /// Description: Rolls back the active transaction asynchronously,
+        /// discarding any uncommitted changes.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous rollback operation.</returns>
         public async Task RollbackTransactionAsync()
         {
             if (_transaction == null) return;
@@ -59,14 +96,26 @@ namespace DynamicDataCore.Implementation
             await DisposeTransactionAsync();
         }
 
+        /// <summary>
+        /// Description: Retrieves the name of the database provider used by the current context.
+        /// </summary>
+        /// <returns>A string representing the database provider name, or <c>null</c> if unavailable.</returns>
         public string? GetDatabaseProviderName()
             => (_context as DbContext)?.Database.ProviderName;
 
+        /// <summary>
+        /// Description: Saves all pending changes to the database asynchronously,
+        /// encapsulating error handling and transaction awareness.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="OperationResult{T}"/> containing a <see cref="bool"/> value
+        /// indicating whether the operation succeeded.
+        /// </returns>
         public async Task<OperationResult<bool>> SaveChangesAsync()
         {
             try
             {
-                // No ejecutar si hay transacción activa, se confirmará al final
+                // If a transaction is active, defer save until commit
                 if (_transaction != null)
                     return OperationResult<bool>.Ok(true);
 
@@ -75,7 +124,7 @@ namespace DynamicDataCore.Implementation
             }
             catch (DbUpdateConcurrencyException concEx)
             {
-                return OperationResult<bool>.Fail("Error de concurrencia detectado.", concEx);
+                return OperationResult<bool>.Fail("Concurrency conflict detected while saving changes.", concEx);
             }
             catch (DbUpdateException dbEx)
             {
@@ -98,10 +147,13 @@ namespace DynamicDataCore.Implementation
             }
             catch (Exception ex)
             {
-                return OperationResult<bool>.Fail("Error al guardar los cambios.", ex);
+                return OperationResult<bool>.Fail("Unexpected error occurred while saving changes.", ex);
             }
         }
 
+        /// <summary>
+        /// Description: Disposes the current database transaction asynchronously and releases related resources.
+        /// </summary>
         private async Task DisposeTransactionAsync()
         {
             if (_transaction != null)
@@ -111,6 +163,9 @@ namespace DynamicDataCore.Implementation
             }
         }
 
+        /// <summary>
+        /// Description: Releases all managed resources associated with the current Unit of Work instance.
+        /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
