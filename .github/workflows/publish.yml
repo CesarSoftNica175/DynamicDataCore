@@ -20,8 +20,8 @@ jobs:
             path: src/DynamicDataCore.Abstractions
           - name: DynamicDataCore.Common
             path: src/DynamicDataCore.Common
-          - name: DynamicDataCore.Infrastructure
-            path: src/DynamicDataCore.Infrastructure
+          - name: DynamicDataCore.Infraestructure
+            path: src/DynamicDataCore.Infraestructure
 
     steps:
       - name: Checkout repository
