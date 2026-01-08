@@ -7,7 +7,7 @@ using DynamicDataCore.Abstractions;
 using DynamicDataCore.Common.Response;
 using Microsoft.EntityFrameworkCore;
 
-namespace DynamicDataCore.Implementation
+namespace DynamicDataCore.Infraestructure.Implementation
 {
 
     /// <summary>
@@ -39,7 +39,7 @@ namespace DynamicDataCore.Implementation
         public IUnitOfWork GetUnitOfWork() => _unitOfWork;
 
         /// <inheritdoc/>
-        public Task<OperationResult<T?>> RetrieveByIdAsync(int id)
+        public Task<OperationResult<T?>> RetrieveByIdAsync(object id)
             => _repository.RetrieveByIdAsync(id);
 
         /// <inheritdoc/>
@@ -53,7 +53,8 @@ namespace DynamicDataCore.Implementation
         /// <inheritdoc/>
         public async Task<OperationResult<List<T>>> RetrieveQueryableAsync(
             Expression<Func<T, bool>>? predicate = null,
-            Func<IQueryable<T>, IQueryable<T>>? includes = null)
+            Func<IQueryable<T>, IQueryable<T>>? includes = null
+        )
         {
             try
             {
@@ -74,7 +75,8 @@ namespace DynamicDataCore.Implementation
         public Task<OperationResult<IEnumerable<T>>> RetrievePagedAsync(
             int page = 1,
             int perPage = 30,
-            Expression<Func<T, bool>>? predicate = null)
+            Expression<Func<T, bool>>? predicate = null
+        )
             => _repository.RetrievePagedAsync(page, perPage, predicate);
 
         /// <inheritdoc/>
@@ -106,14 +108,18 @@ namespace DynamicDataCore.Implementation
         }
 
         /// <inheritdoc/>
-        public async Task<OperationResult<bool>> DeleteAsync(int id)
+        public async Task<OperationResult<bool>> DeleteAsync(object id)
         {
             var entityResult = await _repository.RetrieveByIdAsync(id, asNoTracking: false);
+
             if (!entityResult.Success || entityResult.Data == null)
                 return OperationResult<bool>.Fail("Entity not found.");
 
             var deleteResult = _repository.Delete(entityResult.Data);
-            return deleteResult.Success ? await CommitAsync() : deleteResult;
+
+            return deleteResult.Success 
+                ? await CommitAsync() 
+                : deleteResult;
         }
 
         /// <inheritdoc/>

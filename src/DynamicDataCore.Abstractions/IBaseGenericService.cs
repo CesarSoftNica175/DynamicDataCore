@@ -33,7 +33,7 @@ namespace DynamicDataCore.Abstractions
         /// </summary>
         /// <param name="id">The unique identifier of the entity to retrieve.</param>
         /// <returns>An <see cref="OperationResult{T}"/> containing the entity if found, otherwise null.</returns>
-        Task<OperationResult<T?>> RetrieveByIdAsync(int id);
+        Task<OperationResult<T?>> RetrieveByIdAsync(object id);
 
         /// <summary>
         /// Description: Retrieves all entities of type <typeparamref name="T"/> asynchronously.
@@ -109,7 +109,7 @@ namespace DynamicDataCore.Abstractions
         /// </summary>
         /// <param name="id">The identifier of the entity to delete.</param>
         /// <returns>An <see cref="OperationResult{T}"/> indicating success or failure.</returns>
-        Task<OperationResult<bool>> DeleteAsync(int id);
+        Task<OperationResult<bool>> DeleteAsync(object id);
 
         /// <summary>
         /// Description: Deletes a collection of entities asynchronously.

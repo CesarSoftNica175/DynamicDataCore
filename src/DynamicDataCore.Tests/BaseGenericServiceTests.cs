@@ -1,12 +1,12 @@
 using DynamicDataCore.Abstractions;
 using DynamicDataCore.Common.Response;
-using DynamicDataCore.Implementation;
+using DynamicDataCore.Infraestructure.Implementation;
 using Moq;
 
 namespace DynamicDataCore.Tests
 {
 
-    // Entidad de prueba
+    // Test entity for generic service tests
     public class TestEntity
     {
         public int Id { get; set; }

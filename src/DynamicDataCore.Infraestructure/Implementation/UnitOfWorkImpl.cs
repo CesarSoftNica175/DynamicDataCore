@@ -8,7 +8,7 @@ using DynamicDataCore.Common.Response;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace DynamicDataCore.Implementation
+namespace DynamicDataCore.Infraestructure.Implementation
 {
 
     /// <summary>
