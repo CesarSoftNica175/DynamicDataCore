@@ -7,7 +7,7 @@ using DynamicDataCore.Abstractions;
 using DynamicDataCore.Common.Response;
 using Microsoft.EntityFrameworkCore;
 
-namespace DynamicDataCore.Implementation
+namespace DynamicDataCore.Infraestructure.Implementation
 {
 
     /// <summary>
@@ -38,12 +38,13 @@ namespace DynamicDataCore.Implementation
             _dbSet = _context.Set<T>();
         }
 
-        // 🔹 Recuperación
-        public async Task<OperationResult<T?>> RetrieveByIdAsync(int id, bool asNoTracking = true)
+        // Retrieval
+        public async Task<OperationResult<T?>> RetrieveByIdAsync(object id, bool asNoTracking = true)
         {
             try
             {
-                var entity = await _dbSet.FindAsync(id);
+                var entity = await _dbSet.FindAsync([id]);
+
                 if (entity == null)
                     return OperationResult<T?>.Fail($"Entity with id {id} not found.");
 
@@ -140,7 +141,7 @@ namespace DynamicDataCore.Implementation
             }
         }
 
-        // 🔹 Inserción
+        // Insertion
         public async Task<OperationResult<bool>> AddAsync(T entity)
         {
             try
@@ -167,7 +168,7 @@ namespace DynamicDataCore.Implementation
             }
         }
 
-        // 🔹 Actualización
+        // Update
         public OperationResult<bool> Update(T entity)
         {
             try
@@ -194,7 +195,7 @@ namespace DynamicDataCore.Implementation
             }
         }
 
-        // 🔹 Eliminación
+        // Deletion
         public OperationResult<bool> Delete(T entity)
         {
             try
@@ -221,7 +222,7 @@ namespace DynamicDataCore.Implementation
             }
         }
 
-        // 🔹 Persistencia
+        // Persist Changes
         public async Task<OperationResult<int>> SaveChangesAsync()
         {
             try

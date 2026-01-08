@@ -1,12 +1,12 @@
 ﻿using DynamicDataCore.Abstractions;
 using DynamicDataCore.Common.Response;
-using DynamicDataCore.Implementation;
+using DynamicDataCore.Infraestructure.Implementation;
 using Moq;
 
 namespace DynamicDataCore.Tests
 {
 
-    // Entidad de prueba
+    // Test entity for transaction tests
     public class TransactionEntity
     {
         public int Id { get; set; }
@@ -36,7 +36,7 @@ namespace DynamicDataCore.Tests
             _service = new BaseGenericServiceImpl<TransactionEntity>(_mockUnitOfWork.Object);
         }
 
-        // Caso 1: Transacción inicia correctamente
+        // Case 1: Trasaction begins successfully
         [Fact]
         public async Task BeginTransactionAsync_ShouldInvokeUnitOfWork_WhenCalled()
         {
@@ -52,7 +52,7 @@ namespace DynamicDataCore.Tests
             _mockUnitOfWork.Verify(uow => uow.BeginTransactionAsync(), Times.Once);
         }
 
-        // Caso 2: Commit de transacción exitoso
+        // Case 2: Transaction commit successful
         [Fact]
         public async Task CommitTransactionAsync_ShouldCommit_WhenTransactionIsActive()
         {
@@ -69,7 +69,7 @@ namespace DynamicDataCore.Tests
             _mockUnitOfWork.Verify(uow => uow.CommitTransactionAsync(), Times.Once);
         }
 
-        // Caso 3: Rollback de transacción exitoso
+        // Case 3: Transaction rollback successful
         [Fact]
         public async Task RollbackTransactionAsync_ShouldRollback_WhenTransactionIsActive()
         {
@@ -86,7 +86,7 @@ namespace DynamicDataCore.Tests
             _mockUnitOfWork.Verify(uow => uow.RollbackTransactionAsync(), Times.Once);
         }
 
-        // Caso 4: No ejecutar transacción si ya hay una activa
+        // Case 4: BeginTransaction throws when transaction already active
         [Fact]
         public async Task BeginTransactionAsync_ShouldThrow_WhenTransactionAlreadyActive()
         {
@@ -102,7 +102,7 @@ namespace DynamicDataCore.Tests
             Assert.Equal("Ya existe una transacción activa.", ex.Message);
         }
 
-        // Caso 5: Confirmar que SaveChanges no se llama dentro de transacción activa
+        // Case 5: SaveChangesAsync does not call when transaction is active
         [Fact]
         public async Task SaveChangesAsync_ShouldNotCall_WhenTransactionActive()
         {
@@ -117,7 +117,7 @@ namespace DynamicDataCore.Tests
             _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(), Times.Once);
         }
 
-        // Caso 6: Commit después de operación AddAsync
+        // Case 6: AddAsync commits transaction when operation succeeds
         [Fact]
         public async Task AddAsync_ShouldCommit_WhenOperationSucceeds()
         {

@@ -9,6 +9,7 @@ It provides an abstraction layer over Entity Framework Core (EF Core), supportin
 
 - Generic repository and unit of work implementation.
 - Full async/await support.
+- Supports any primary key type (`int`, `Guid`, `string`, etc.) through dynamic identifier handling.
 - Built-in transaction management (`BeginTransactionAsync`, `CommitTransactionAsync`, `RollbackTransactionAsync`).
 - Multiple `DbContext` support through factory configuration.
 - Standardized `OperationResult<T>` responses.
@@ -227,6 +228,29 @@ public class OrderItem
     public int OrderId { get; set; }
     public string ProductName { get; set; } = string.Empty;
 }
+```
+
+---
+
+## 🔑 Primary Key Support (NEW in v1.0.2)
+
+DynamicDataCore is fully agnostic to entity primary key types.
+
+All `RetrieveByIdAsync` and `DeleteAsync` operations support **any key type** supported by EF Core, including:
+
+- `int`
+- `Guid`
+- `string`
+- `byte`
+- Custom key types
+
+This is achieved internally using EF Core's native `FindAsync(object[] keyValues)` API.
+
+### Examples
+
+#### ✔ Integer Key
+```csharp
+await _productService.RetrieveByIdAsync(1);
 ```
 
 ---

@@ -1,8 +1,8 @@
 ﻿using DynamicDataCore.Abstractions;
-using DynamicDataCore.Implementation;
+using DynamicDataCore.Infraestructure.Implementation;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DynamicDataCore.Extensions
+namespace DynamicDataCore.Infraestructure.Extensions
 {
 
     /// <summary>

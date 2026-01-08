@@ -5,7 +5,7 @@ using DynamicDataCore.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DynamicDataCore.Implementation
+namespace DynamicDataCore.Infraestructure.Implementation
 {
 
     /// <summary>
