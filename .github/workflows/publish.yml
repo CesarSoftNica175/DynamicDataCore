@@ -48,7 +48,7 @@ jobs:
             https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
             --name github \
             --username ${{ github.repository_owner }} \
-            --password ${{ secrets.GITHUB_TOKEN }} \
+            --password ${{ secrets.DYNAMICDATACOREPACKAGETOKEN }} \
             --store-password-in-clear-text
       
       - name: Publish to GitHub Packages
