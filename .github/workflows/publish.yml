@@ -3,7 +3,7 @@ name: Publish DynamicDataCore Packages
 on:
   push:
     tags:
-      - 'v*.*.*'   # Ej: v1.0.2
+      - 'v*.*.*'
 
 permissions:
   contents: read
@@ -20,8 +20,8 @@ jobs:
             path: src/DynamicDataCore.Abstractions
           - name: DynamicDataCore.Common
             path: src/DynamicDataCore.Common
-          - name: DynamicDataCore.Infraestructure
-            path: src/DynamicDataCore.Infraestructure
+          - name: DynamicDataCore.Infrastructure
+            path: src/DynamicDataCore.Infrastructure
 
     steps:
       - name: Checkout repository
@@ -30,7 +30,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Restore dependencies
         run: dotnet restore ${{ matrix.project.path }}
@@ -41,6 +43,17 @@ jobs:
       - name: Pack
         run: dotnet pack ${{ matrix.project.path }} -c Release --no-build -o ./artifacts
 
+      - name: Verify no AI guide files in package
+        run: |
+          for pkg in ./artifacts/*.nupkg; do
+            echo "Checking $pkg for AI files..."
+            if unzip -l "$pkg" | grep -iE 'claude|agents|copilot|\.ai' > /dev/null 2>&1; then
+              echo "ERROR: AI guide file found in $pkg — aborting publish."
+              exit 1
+            fi
+          done
+          echo "Package clean — no AI files found."
+
       - name: Add GitHub Packages NuGet source
         run: |
           dotnet nuget remove source github || true
@@ -50,7 +63,7 @@ jobs:
             --username ${{ github.repository_owner }} \
             --password ${{ secrets.DYNAMICDATACOREPACKAGETOKEN }} \
             --store-password-in-clear-text
-      
+
       - name: Publish to GitHub Packages
         run: |
           for package in ./artifacts/*.nupkg; do

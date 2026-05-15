@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataCore.Abstraction
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataCore.Common", "src\DynamicDataCore.Common\DynamicDataCore.Common.csproj", "{94FA748E-8C9F-6678-22DE-9E02A0D16755}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataCore.Infraestructure", "src\DynamicDataCore.Infraestructure\DynamicDataCore.Infraestructure.csproj", "{E521CF10-3DE1-91BB-AD78-BFC3C85318A5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataCore.Infrastructure", "src\DynamicDataCore.Infrastructure\DynamicDataCore.Infrastructure.csproj", "{E521CF10-3DE1-91BB-AD78-BFC3C85318A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataCore.Tests", "src\DynamicDataCore.Tests\DynamicDataCore.Tests.csproj", "{79D6A91F-58E4-3B6A-6A02-FF07090B5444}"
 EndProject

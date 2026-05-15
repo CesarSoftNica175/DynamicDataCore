@@ -361,3 +361,21 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# === AI assistants — local artifacts only (CLAUDE.md and AGENTS.md ARE committed) ===
+.claude/
+.cursor/
+.cursorrules.local
+.aider*
+.continue/
+.codeium/
+.copilot/
+.windsurf*
+.specstory/
+**/.ai-cache/
+**/.llm-cache/
+**/copilot-*.log
+ai-logs/
+prompts/.local/
+prompts/*.local.md
+*.prompt.local

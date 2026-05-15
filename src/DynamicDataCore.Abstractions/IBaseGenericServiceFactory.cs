@@ -1,30 +1,18 @@
-﻿namespace DynamicDataCore.Abstractions
+namespace DynamicDataCore.Abstractions;
+
+/// <summary>
+/// Creates <see cref="IBaseGenericService{T}"/> instances scoped to a logical database key.
+/// </summary>
+/// <remarks>
+/// Prefer injecting <see cref="IDbContextProvider"/> directly for new code.
+/// This factory remains for backwards compatibility.
+/// </remarks>
+[Obsolete("Use IDbContextProvider + scoped IBaseGenericService<T> registration. Will be removed in v3.0.")]
+public interface IBaseGenericServiceFactory
 {
-
     /// <summary>
-    /// Description: Defines the contract for a factory responsible for creating 
-    /// <see cref="IBaseGenericService{T}"/> instances dynamically based on the schema or database context.
-    /// <para>This allows flexible resolution of service instances tied to different data contexts.</para>
-    /// <author>Created By: César Adolfo Solís Alvarez (CSOLIS).</author>
-    /// <para></para>
-    /// <since>Creation Date: 17/10/2025</since>
+    /// Creates a service for entity <typeparamref name="T"/> bound to the specified <paramref name="databaseKey"/>.
     /// </summary>
-    public interface IBaseGenericServiceFactory
-    {
-
-        /// <summary>
-        /// Creates a new instance of a <see cref="IBaseGenericService{T}"/> for the specified schema name.
-        /// </summary>
-        /// <typeparam name="T">The entity type to manage with the created service.</typeparam>
-        /// <param name="schemaName">The schema or context identifier from which to resolve the DbContext.</param>
-        /// <returns>An instance of <see cref="IBaseGenericService{T}"/> bound to the corresponding context.</returns>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if no DbContext mapping is found for the provided schema name.
-        /// </exception>
-        /// <exception cref="InvalidCastException">
-        /// Thrown if the resolved DbContext does not implement <see cref="IAppDbContext"/>.
-        /// </exception>
-        IBaseGenericService<T> Create<T>(string schemaName) where T : class;
-
-    }
+    /// <exception cref="InvalidOperationException">No DbContext registered for <paramref name="databaseKey"/>.</exception>
+    IBaseGenericService<T> Create<T>(string databaseKey) where T : class;
 }
