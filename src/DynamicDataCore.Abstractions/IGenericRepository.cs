@@ -23,9 +23,7 @@ public interface IGenericRepository<T> where T : class
 
     // ── Pagination ───────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Offset pagination (Skip/Take). Requires an explicit <paramref name="orderBy"/> for deterministic results.
-    /// </summary>
+    /// <summary>Offset pagination (Skip/Take). Prefer <c>RetrievePagedByOffsetAsync</c> which requires an explicit orderBy for deterministic results.</summary>
     [Obsolete("Prefer RetrievePagedByOffsetAsync with explicit orderBy. Will be removed in v3.0.")]
     Task<OperationResult<IEnumerable<T>>> RetrievePagedAsync(int page = 1, int perPage = 30, Expression<Func<T, bool>>? predicate = null, bool asNoTracking = true, CancellationToken cancellationToken = default);
 
