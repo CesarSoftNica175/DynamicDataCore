@@ -1,0 +1,9 @@
+<Project>
+  <!-- Exclude AI guide files from NuGet packages -->
+  <ItemGroup>
+    <None Remove="$(MSBuildThisFileDirectory)CLAUDE.md" />
+    <None Remove="$(MSBuildThisFileDirectory)AGENTS.md" />
+    <Content Remove="$(MSBuildThisFileDirectory)CLAUDE.md" />
+    <Content Remove="$(MSBuildThisFileDirectory)AGENTS.md" />
+  </ItemGroup>
+</Project>

@@ -1,71 +1,31 @@
-﻿using System;
-using System.Threading.Tasks;
 using DynamicDataCore.Common.Response;
 
-namespace DynamicDataCore.Abstractions
+namespace DynamicDataCore.Abstractions;
+
+/// <summary>
+/// Coordinates transactional operations across multiple repositories within a single database context.
+/// Implements <see cref="IAsyncDisposable"/> to release pooled DbContext instances cleanly.
+/// </summary>
+public interface IUnitOfWork : IAsyncDisposable, IDisposable
 {
+    /// <summary>Retrieves a cached repository for the specified entity type.</summary>
+    IGenericRepository<T> Repository<T>() where T : class;
 
-    /// <summary>
-    /// Description: Defines the contract for implementing the Unit of Work pattern,
-    /// which coordinates transactional operations and ensures that multiple repositories
-    /// work together under a single database context.
-    /// <para></para>
-    /// <author>Created By: César Adolfo Solís Alvarez (CSOLIS).</author>
-    /// <para></para>
-    /// <since>Creation Date: 17/10/2025</since>
-    /// </summary>
-    public interface IUnitOfWork : IDisposable
-    {
+    /// <summary>Returns the active database provider name (e.g., SqlServer, Npgsql).</summary>
+    string? GetDatabaseProviderName();
 
-        /// <summary>
-        /// Description: Retrieves a generic repository for a specific entity type.
-        /// </summary>
-        /// <typeparam name="T">The entity type for which the repository is created.</typeparam>
-        /// <returns>An instance of <see cref="IGenericRepository{T}"/> associated with the current context.</returns>
-        IGenericRepository<T> Repository<T>() where T : class;
+    /// <summary>Begins a new database transaction.</summary>
+    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Description: Returns the name of the active database provider
-        /// (e.g., Microsoft.EntityFrameworkCore.SqlServer, Npgsql, etc.).
-        /// </summary>
-        /// <returns>A string representing the database provider name, or <c>null</c> if unavailable.</returns>
-        string? GetDatabaseProviderName();
+    /// <summary>Commits the active transaction, persisting all pending changes atomically.</summary>
+    Task CommitTransactionAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Description: Begins a new database transaction asynchronously,
-        /// ensuring that all subsequent operations are executed within the same transactional scope.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task BeginTransactionAsync();
+    /// <summary>Rolls back the active transaction, discarding all uncommitted changes.</summary>
+    Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Description: Commits the current transaction asynchronously,
-        /// persisting all pending changes to the database atomically.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task CommitTransactionAsync();
+    /// <summary>Persists pending changes outside of an explicit transaction.</summary>
+    Task<OperationResult<bool>> SaveChangesAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Description: Rolls back the current transaction asynchronously,
-        /// reverting all uncommitted changes.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task RollbackTransactionAsync();
-
-        /// <summary>
-        /// Description: Persists all pending changes in the current context
-        /// to the underlying database asynchronously.
-        /// </summary>
-        /// <returns>
-        /// An <see cref="OperationResult{T}"/> containing a <see cref="bool"/> value
-        /// indicating the success or failure of the operation.
-        /// </returns>
-        Task<OperationResult<bool>> SaveChangesAsync();
-
-        /// <summary>
-        /// Description: Indicates whether an active transaction is currently in progress.
-        /// </summary>
-        bool HasActiveTransaction { get; }
-
-    }
+    /// <summary>True when an explicit transaction is currently open.</summary>
+    bool HasActiveTransaction { get; }
 }
