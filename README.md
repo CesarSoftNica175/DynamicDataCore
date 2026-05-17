@@ -1,273 +1,315 @@
 # DynamicDataCore
 
-DynamicDataCore is a lightweight, extensible data access framework designed to simplify repository and unit of work patterns in .NET applications.  
-It provides an abstraction layer over Entity Framework Core (EF Core), supporting multiple `DbContext` configurations, explicit transactions, and automatic operation result wrapping for consistent error handling.
+[![NuGet](https://img.shields.io/badge/nuget-v2.0.0-blue)](https://github.com/CesarSoftNica175/DynamicDataCore/packages)
+[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-purple)](https://dotnet.microsoft.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+Lightweight, extensible data access framework for .NET built on EF Core. Provides Unit of Work, generic repositories, four pagination strategies, async streaming, bulk operations, and multi-database support — all with full `CancellationToken` propagation.
 
 ---
 
-## 📦 Key Features
+## What's new in v2.0.0
 
-- Generic repository and unit of work implementation.
-- Full async/await support.
-- Supports any primary key type (`int`, `Guid`, `string`, etc.) through dynamic identifier handling.
-- Built-in transaction management (`BeginTransactionAsync`, `CommitTransactionAsync`, `RollbackTransactionAsync`).
-- Multiple `DbContext` support through factory configuration.
-- Standardized `OperationResult<T>` responses.
-- Clean separation of concerns between repositories and services.
-- Fully testable with dependency injection.
+- **Critical bug fix** — transactions now actually commit (v1 disposed without calling `CommitAsync`).
+- **Multi-database** — `IDbContextProvider` with `IDbContextFactory<TContext>` pooling per logical key.
+- **Four pagination strategies** — Offset, Keyset, Seek (last-seen-ID), and Cursor.
+- **`IAsyncEnumerable<T>` streaming** — memory-bounded iteration for large result sets.
+- **Bulk operations** — producer-consumer pipeline via `System.Threading.Channels`.
+- **`CancellationToken`** on every public async API.
+- **`IAsyncDisposable`** on `IUnitOfWork`; use `await using`.
+- **Multi-target** — `net8.0` and `net10.0`.
+- **`record sealed`** for all DTOs; `sealed class` for all implementations.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list. Upgrading from v1? See [docs/migration-v1-to-v2.md](docs/migration-v1-to-v2.md).
 
 ---
 
-## 🚀 Getting Started
+## Installation
 
-### 1. Installation
+The package is published to GitHub Packages. Add the source to your `nuget.config`:
 
-Add the package reference (when published to NuGet):
+```xml
+<configuration>
+  <packageSources>
+    <add key="github" value="https://nuget.pkg.github.com/CesarSoftNica175/index.json" />
+  </packageSources>
+</configuration>
+```
 
 ```bash
-dotnet add package DynamicDataCore
-```
----
-
-## 🏗️ Architecture Overview
-
-The following diagram provides a high-level architectural view of DynamicDataCore.
-It shows how each layer interacts, emphasizing separation of concerns and scalability.
-
-```mermaid
-flowchart TD
-    Controllers -->|Uses| GenericService[IBaseGenericService<T>]
-    GenericService --> UnitOfWork[IUnitOfWork]
-    GenericService --> Repository[IGenericRepository<T>]
-    UnitOfWork --> UnitOfWorkImpl[UnitOfWorkImpl]
-    Repository --> RepositoryImpl[GenericRepositoryImpl<T>]
-    UnitOfWorkImpl --> DbContext[DbContext]
-    RepositoryImpl --> DbContext
-    DbContext --> SQL[SQL Provider]
+dotnet add package DynamicDataCore --version 2.0.0
 ```
 
 ---
 
-## 🔁 Dependency Injection Flow
+## Quick start — single database
 
-```plaintext
-Startup.cs
-     │
-     ├── AddDynamicCoreInfrastructure()
-     │        │
-     │        ├── Registers UnitOfWorkImpl
-     │        ├── Registers GenericRepositoryImpl<T>
-     │        ├── Registers BaseGenericServiceImpl<T>
-     │        └── Registers BaseGenericServiceFactoryImpl
-     │
-     ▼
-Application Services / Controllers
-     │
-     └── Consume IBaseGenericService<T> or Factory
+Register your `DbContext` and add DynamicDataCore:
+
+```csharp
+// Program.cs
+builder.Services.AddDbContextPool<AppDbContext>(opt =>
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddDynamicCoreInfrastructure();
 ```
 
----
+Inject and use `IBaseGenericService<T>`:
 
-## ⚙️ Configuration Example (appsettings.json)
-
-### 2. Configure your DbContexts
-
-```json
+```csharp
+public class ProductService(IBaseGenericService<Product> svc)
 {
-  "ConnectionStrings": {
-    "SqlServerConnection": "Server=.;Database=MyAppDb;Trusted_Connection=True;",
-    "PostgresConnection": "Host=localhost;Database=MyAppDb;Username=postgres;Password=admin;"
-  },
-  "DbContextMappings": {
-    "Default": "DynamicDataCore.SqlServerDbContext",
-    "Reporting": "DynamicDataCore.ReportingDbContext"
-  }
+    public async Task AddAsync(Product p, CancellationToken ct = default)
+    {
+        var result = await svc.AddAsync(p, ct);
+        if (!result.Success) throw new Exception(result.Message);
+    }
+
+    public async Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct = default)
+    {
+        var result = await svc.RetrieveAsync(cancellationToken: ct);
+        return result.Data ?? [];
+    }
+}
+```
+
+Any primary key type is supported — `int`, `Guid`, `string`, etc.:
+
+```csharp
+var result = await svc.RetrieveByIdAsync(Guid.Parse("..."), cancellationToken: ct);
+```
+
+---
+
+## Multi-database setup
+
+> **Note:** `IDbContextProvider` is only registered when using the `Action<DynamicCoreOptions>` overload below. The parameterless `AddDynamicCoreInfrastructure()` does **not** register it.
+
+Register each `DbContext` independently, then map logical keys:
+
+```csharp
+builder.Services.AddDbContextPool<PrimaryDbContext>(opt =>
+    opt.UseSqlServer(builder.Configuration["Databases:Primary"]));
+
+builder.Services.AddDbContextPool<ReportingDbContext>(opt =>
+    opt.UseNpgsql(builder.Configuration["Databases:Reporting"]));
+
+builder.Services.AddDynamicCoreInfrastructure(opt =>
+{
+    opt.AddDatabase<PrimaryDbContext>("Primary");
+    opt.AddDatabase<ReportingDbContext>("Reporting");
+});
+```
+
+Resolve a typed context by key:
+
+```csharp
+public class ReportService(IDbContextProvider provider)
+{
+    public async Task RunReportAsync(CancellationToken ct)
+    {
+        using var ctx = provider.CreateContext<ReportingDbContext>("Reporting");
+        var rows = await ctx.Set<SalesRow>().ToListAsync(ct);
+        // ...
+    }
 }
 ```
 
 ---
 
-## 🧠 Usage Example – Basic Setup
+## Transactions
 
-``` C#
-using DynamicDataCore.Extensions;
+`IUnitOfWork` implements `IAsyncDisposable` — always use `await using`:
 
-public static class DependencyInyection
+```csharp
+public class OrderService(IUnitOfWork uow)
 {
-    public static void ConfigureServices(IServiceCollection services)
-    {
-        // Add EF Core DbContext(s)
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(Configuration["DatabaseMappings:AppDbContext"]));
-
-        // Register the DynamicDataCore infrastructure
-        services.AddDynamicCoreInfrastructure();
-
-        // Other services
-        services.AddControllers();
-    }
-}
-```
-
-### 💡 Example 1: Basic CRUD Operations
-
-``` C#
-public class ProductService
-{
-    private readonly IBaseGenericService<Product> _productService;
-
-    public ProductService(IBaseGenericService<Product> productService)
-    {
-        _productService = productService;
-    }
-
-    public async Task AddProductAsync(Product product)
-    {
-        var result = await _productService.AddAsync(product);
-        if (!result.Success)
-            throw new Exception(result.Message);
-    }
-
-    public async Task<IEnumerable<Product>> GetAllAsync()
-    {
-        var result = await _productService.RetrieveAsync();
-        return result.Data ?? Enumerable.Empty<Product>();
-    }
-}
-```
-
-### 💡 Example 2: Explicit Transaction Handling
-
-``` C#
-public class OrderService
-{
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IBaseGenericService<Order> _orderService;
-    private readonly IBaseGenericService<OrderItem> _itemService;
-
-    public OrderService(IUnitOfWork unitOfWork)
-    {
-        _unitOfWork = unitOfWork;
-        _orderService = new BaseGenericServiceImpl<Order>(_unitOfWork);
-        _itemService = new BaseGenericServiceImpl<OrderItem>(_unitOfWork);
-    }
-
-    public async Task<OperationResult<bool>> CreateOrderWithItemsAsync(Order order, IEnumerable<OrderItem> items)
+    public async Task<OperationResult<bool>> CreateOrderAsync(
+        Order order, IEnumerable<OrderItem> items, CancellationToken ct = default)
     {
         try
         {
-            await _unitOfWork.BeginTransactionAsync();
+            await uow.BeginTransactionAsync(ct);
 
-            var orderResult = await _orderService.AddAsync(order);
-            if (!orderResult.Success)
-                throw new Exception(orderResult.Message);
+            var orderResult = await uow.Repository<Order>().AddAsync(order, ct);
+            if (!orderResult.Success) throw new Exception(orderResult.Message);
 
             foreach (var item in items)
             {
-                item.OrderId = order.Id;
-                var itemResult = await _itemService.AddAsync(item);
-                if (!itemResult.Success)
-                    throw new Exception(itemResult.Message);
+                var itemResult = await uow.Repository<OrderItem>().AddAsync(item, ct);
+                if (!itemResult.Success) throw new Exception(itemResult.Message);
             }
 
-            await _unitOfWork.CommitTransactionAsync();
+            await uow.CommitTransactionAsync(ct);
             return OperationResult<bool>.Ok(true);
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackTransactionAsync();
+            await uow.RollbackTransactionAsync(ct);
             return OperationResult<bool>.Fail("Transaction rolled back.", ex);
         }
     }
 }
 ```
 
-### 🧪 Example 3: Unit Tests (Moq)
-
-``` C#
-public class BaseGenericServiceTests
-{
-    private readonly Mock<IUnitOfWork> _mockUow = new();
-    private readonly Mock<IGenericRepository<Product>> _mockRepo = new();
-    private readonly BaseGenericServiceImpl<Product> _service;
-
-    public BaseGenericServiceTests()
-    {
-        _mockUow.Setup(u => u.Repository<Product>()).Returns(_mockRepo.Object);
-        _mockUow.Setup(u => u.SaveChangesAsync()).ReturnsAsync(OperationResult<bool>.Ok(true));
-        _service = new BaseGenericServiceImpl<Product>(_mockUow.Object);
-    }
-
-    [Fact]
-    public async Task AddAsync_Should_SaveChanges_When_Success()
-    {
-        var product = new Product { Id = 1, Name = "Test" };
-        _mockRepo.Setup(r => r.AddAsync(product)).ReturnsAsync(OperationResult<bool>.Ok(true));
-
-        var result = await _service.AddAsync(product);
-
-        Assert.True(result.Success);
-        _mockUow.Verify(u => u.SaveChangesAsync(), Times.Once);
-    }
-}
-```
-
-### 🧱 Entities Example
-
-``` C#
-public class Order
-{
-    public int Id { get; set; }
-    public DateTime Date { get; set; }
-    public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
-}
-
-public class OrderItem
-{
-    public int Id { get; set; }
-    public int OrderId { get; set; }
-    public string ProductName { get; set; } = string.Empty;
-}
-```
-
 ---
 
-## 🔑 Primary Key Support (NEW in v1.0.2)
+## Pagination — choosing a strategy
 
-DynamicDataCore is fully agnostic to entity primary key types.
+| Strategy | Use when | Method |
+|---|---|---|
+| **Offset** | Small tables, random-access by page number | `RetrievePagedByOffsetAsync` |
+| **Keyset** | Large append-only tables, sorted navigation | `RetrievePagedByKeysetAsync` |
+| **Seek / Last-Seen-ID** | ID-ordered feeds (infinite scroll) | `RetrievePagedBySeekAsync` |
+| **Cursor** | Stable opaque cursor exposed in API responses | `RetrievePagedByCursorAsync` |
 
-All `RetrieveByIdAsync` and `DeleteAsync` operations support **any key type** supported by EF Core, including:
+### Offset pagination
 
-- `int`
-- `Guid`
-- `string`
-- `byte`
-- Custom key types
-
-This is achieved internally using EF Core's native `FindAsync(object[] keyValues)` API.
-
-### Examples
-
-#### ✔ Integer Key
 ```csharp
-await _productService.RetrieveByIdAsync(1);
+var page = await svc.RetrievePagedByOffsetAsync(
+    request: new OffsetPageRequest(Page: 2, PerPage: 20),
+    orderBy: p => p.CreatedAt,
+    cancellationToken: ct);
+
+// page.Items          — current page entities
+// page.Metadata       — CurrentPage, PerPage, Total, LastPage
+// page.HasNextPage    — true if more pages exist
+```
+
+### Keyset pagination (no COUNT query, fast on large tables)
+
+```csharp
+// First page — After: null fetches from the beginning
+var page = await svc.RetrievePagedByKeysetAsync(
+    request: new KeysetPageRequest<int>(After: null, PerPage: 20),
+    keySelector: p => p.Id,
+    cancellationToken: ct);
+
+// Next page — pass last ID from previous page
+var next = await svc.RetrievePagedByKeysetAsync(
+    request: new KeysetPageRequest<int>(After: page.Items[^1].Id, PerPage: 20),
+    keySelector: p => p.Id,
+    cancellationToken: ct);
+```
+
+### Seek / Last-Seen-ID
+
+```csharp
+var page = await svc.RetrievePagedBySeekAsync(
+    request: new SeekPageRequest<int>(LastSeenId: lastId, PerPage: 20),
+    keySelector: p => p.Id,
+    cancellationToken: ct);
+```
+
+### Cursor pagination (stable opaque cursors)
+
+```csharp
+// First page
+var page = await svc.RetrievePagedByCursorAsync(
+    request: new CursorPageRequest(Cursor: null, PerPage: 20),
+    keySelector: p => p.Id,
+    cancellationToken: ct);
+
+// Subsequent page — use NextCursor from previous response
+var next = await svc.RetrievePagedByCursorAsync(
+    request: new CursorPageRequest(Cursor: page.NextCursor, PerPage: 20),
+    keySelector: p => p.Id,
+    cancellationToken: ct);
 ```
 
 ---
 
-### 📦 Package Summary
-| Layer          | Interface / Class         | Description                                          |
-| -------------- | ------------------------- | ---------------------------------------------------- |
-| Abstractions   | IAppDbContext             | Lightweight abstraction over EF Core DbContext       |
-| Abstractions   | IUnitOfWork               | Encapsulates transaction and repository coordination |
-| Abstractions   | IGenericRepository<T>     | Generic repository contract for CRUD operations      |
-| Implementation | UnitOfWorkImpl            | Default EF Core implementation of IUnitOfWork        |
-| Implementation | GenericRepositoryImpl<T>  | Default EF Core implementation of repository         |
-| Implementation | BaseGenericServiceImpl<T> | Generic business service using UnitOfWork            |
-| Common         | OperationResult<T>        | Unified response object for error/success handling   |
+## Streaming large result sets
 
+Use `StreamAsync` to iterate millions of rows without loading them all into memory:
+
+```csharp
+await foreach (var product in svc.StreamAsync(
+    predicate: p => p.IsActive,
+    cancellationToken: ct))
+{
+    await ProcessAsync(product, ct);
+}
+```
 
 ---
 
-### 🧾 License
-This project is licensed under the MIT License — you are free to use, modify, and distribute under the same terms.
+## Bulk operations
+
+`BulkInsertAsync`, `BulkUpdateAsync`, and `BulkDeleteAsync` process entities in configurable batches using a `System.Threading.Channels` producer-consumer pipeline. Back-pressure prevents out-of-memory errors on large collections.
+
+```csharp
+var result = await svc.BulkInsertAsync(products, batchSize: 500, cancellationToken: ct);
+// result.Data — total rows processed
+// result.Success — false if any batch throws
+```
+
+---
+
+## OperationResult\<T\> pattern
+
+All service and repository methods return `OperationResult<T>` — a `sealed record` that wraps success/failure uniformly:
+
+```csharp
+var result = await svc.AddAsync(entity, ct);
+
+if (!result.Success)
+{
+    logger.LogError("Failed: {Message} | TraceId: {TraceId}", result.Message, result.TraceId);
+    return Problem(result.Message);
+}
+```
+
+Paginated results from the legacy `RetrievePagedAsync` include `result.PaginationMetadata`:
+
+```csharp
+var paged = await svc.RetrievePagedAsync(page: 1, perPage: 10);
+var meta = paged.PaginationMetadata; // CurrentPage, Total, LastPage, etc.
+```
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Controller -->|injects| Service[IBaseGenericService&lt;T&gt;]
+    Service --> UoW[IUnitOfWork]
+    Service --> Repo[IGenericRepository&lt;T&gt;]
+    UoW -->|creates| UoWImpl[UnitOfWorkImpl]
+    Repo --> RepoImpl[GenericRepositoryImpl&lt;T&gt;]
+    UoWImpl --> DbContext
+    RepoImpl --> DbContext
+    Provider[IDbContextProvider] -->|resolves via| Factory[IDbContextFactory&lt;TContext&gt;]
+    Factory --> DbContext
+    DbContext --> SQL[SQL / PostgreSQL]
+```
+
+---
+
+## Package summary
+
+| Layer | Type | Description |
+|---|---|---|
+| Abstractions | `IAppDbContext` | Minimal EF Core DbContext abstraction |
+| Abstractions | `IUnitOfWork` | Transaction coordination + repository access |
+| Abstractions | `IGenericRepository<T>` | CRUD, pagination, streaming, bulk |
+| Abstractions | `IBaseGenericService<T>` | Application-layer service over repository |
+| Abstractions | `IDbContextProvider` | Multi-database context resolution by key |
+| Implementation | `UnitOfWorkImpl` | EF Core `IUnitOfWork` (sealed, IAsyncDisposable) |
+| Implementation | `GenericRepositoryImpl<T>` | EF Core repository with all pagination strategies |
+| Implementation | `BaseGenericServiceImpl<T>` | Delegates to UoW + repository |
+| Implementation | `PooledDbContextProvider` | Resolves DbContexts via `IDbContextFactory<TContext>` |
+| Common | `OperationResult<T>` | Sealed record — unified success/failure envelope |
+| Common | `PaginationMetadata` | Sealed record — page metadata |
+| Common | `PagedResult<T>` | Sealed record — items + metadata + next cursor |
+| Common | `OffsetPageRequest` | Sealed record — page + perPage |
+| Common | `KeysetPageRequest<TKey>` | Sealed record — after + perPage + direction |
+| Common | `SeekPageRequest<TKey>` | Sealed record — lastSeenId + perPage |
+| Common | `CursorPageRequest` | Sealed record — opaque cursor + perPage |
+
+---
+
+## License
+
+MIT — free to use, modify, and distribute under the same terms.
