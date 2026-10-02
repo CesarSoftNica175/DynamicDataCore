@@ -8,10 +8,21 @@ namespace DynamicDataCore.Tests.Procedures;
 /// Starts one disposable SQL Server 2022 container per test run. The SA password is generated at random in
 /// memory for each run; it is never written to disk or logged. Requires a running Docker daemon.
 /// Skip these tests with: dotnet test --filter "Category!=Integration".
+/// <para>
+/// One container per test process (the collection fixture is shared by every integration class). A plain
+/// <c>dotnet test</c> without <c>-f</c> runs the net8.0 and net10.0 hosts as two separate processes at the
+/// same time; to avoid two SQL Server containers competing for memory/startup, each process takes an
+/// exclusive cross-process file lock for the lifetime of its container, so the TFMs use the container
+/// one after the other. The OS releases the lock if a process dies.
+/// </para>
 /// </summary>
 public sealed class SqlServerFixture : IAsyncLifetime
 {
+    private static readonly string LockPath = Path.Combine(Path.GetTempPath(), "DynamicDataCore.Tests.sqlserver.lock");
+    private static readonly TimeSpan LockTimeout = TimeSpan.FromMinutes(15);
+
     private readonly MsSqlContainer _container;
+    private FileStream? _processLock;
 
     public SqlServerFixture()
     {
@@ -26,12 +37,43 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        _processLock = await AcquireProcessLockAsync();
         await _container.StartAsync();
         ConnectionString = _container.GetConnectionString();
         await SeedAsync();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync().AsTask();
+    public async Task DisposeAsync()
+    {
+        try
+        {
+            await _container.DisposeAsync().AsTask();
+        }
+        finally
+        {
+            _processLock?.Dispose();
+        }
+    }
+
+    private static async Task<FileStream> AcquireProcessLockAsync()
+    {
+        var deadline = DateTime.UtcNow + LockTimeout;
+        while (true)
+        {
+            try
+            {
+                return new FileStream(LockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(500);
+            }
+            catch (UnauthorizedAccessException) when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(500); // Windows reports a sharing violation as access denied in some cases.
+            }
+        }
+    }
 
     // Test-only schema bootstrap; the test project is deliberately outside the raw-SQL analyzer.
     private async Task SeedAsync()
