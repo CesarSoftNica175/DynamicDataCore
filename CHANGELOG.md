@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.1.1] - 2026-10-02
+
+Publishing only: first release published to nuget.org through Trusted Publishing (OIDC, no API key). No code changes since 2.1.0.
+
 ## [2.1.0] - 2026-10-02
 
 Backward compatible with 2.0: no existing public signature changed.
