@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.1.2] - 2026-10-02
+
+Publishing only: fixes the publish workflow condition (the nuget.org step was skipped in 2.1.1). First release on nuget.org. No code changes.
+
 ## [2.1.1] - 2026-10-02
 
 Publishing only: first release published to nuget.org through Trusted Publishing (OIDC, no API key). No code changes since 2.1.0.
