@@ -174,9 +174,9 @@ public sealed class SqlProcedureExecutor : ISqlProcedureExecutor
         return parameter;
     }
 
-    // The driver rejects an empty SqlDataRecord enumeration, so an empty TVP is sent as NULL
-    // (SQL Server treats it as an empty READONLY table).
-    private static object ToRecords(TableValuedRows rows)
+    // The driver rejects an empty SqlDataRecord enumeration and DBNull for a TVP; an unset (null) Value is
+    // sent as an empty READONLY table, so an empty row set maps to null.
+    private static object? ToRecords(TableValuedRows rows)
     {
         var metadata = rows.Columns.Select(ToMetaData).ToArray();
         var records = new List<SqlDataRecord>();
@@ -190,7 +190,7 @@ public sealed class SqlProcedureExecutor : ISqlProcedureExecutor
             records.Add(record);
         }
 
-        return records.Count == 0 ? DBNull.Value : records;
+        return records.Count == 0 ? null : records;
     }
 
     private static SqlMetaData ToMetaData(TableValueColumn c) => c.DbType switch
