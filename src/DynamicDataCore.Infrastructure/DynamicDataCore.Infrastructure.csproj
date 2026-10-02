@@ -19,10 +19,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.11" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="$(EfCoreVersion)" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="$(EfCoreVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="$(MsExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MsExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

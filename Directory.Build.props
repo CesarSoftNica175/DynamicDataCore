@@ -1,4 +1,15 @@
 <Project>
+  <!-- EF Core / Microsoft.Extensions.* line follows the target framework:
+       net8.0 -> 9.x (last EF Core line supporting net8.0), net10.0 -> 10.x. -->
+  <PropertyGroup>
+    <EfCoreVersion>9.0.11</EfCoreVersion>
+    <MsExtensionsVersion>9.0.11</MsExtensionsVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <EfCoreVersion>10.0.12</EfCoreVersion>
+    <MsExtensionsVersion>10.0.12</MsExtensionsVersion>
+  </PropertyGroup>
+
   <!-- Exclude AI guide files from NuGet packages -->
   <ItemGroup>
     <None Remove="$(MSBuildThisFileDirectory)CLAUDE.md" />
