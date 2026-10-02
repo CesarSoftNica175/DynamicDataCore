@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.1.0] - 2026-10-02
+
+Backward compatible with 2.0: no existing public signature changed.
+
+### Added
+
+- **`ISqlProcedureExecutor`** (Abstractions) with `QueryAsync<T>`, `QuerySingleOrDefaultAsync<T>`, `ExecuteAsync` (rows affected, RETURN value, output parameters) and `QueryMultipleAsync` (sequential result sets), all with `CancellationToken`. Implemented by `SqlProcedureExecutor` on Microsoft.Data.SqlClient, always `CommandType.StoredProcedure`; built-in mapper, no Dapper.
+- **`ProcedureName`** / **`TableTypeName`**: validated `schema.name` (`^[A-Za-z_]\w*\.[A-Za-z_]\w*$`, ASCII). No public API accepts SQL text.
+- **`ProcedureParameters`** builder: `Input`, `Output`, `InputOutput`, `ReturnValue`, `Structured` (TVP from `DataTable` or provider-agnostic `TableValuedRows`), with `SqlDbType`, size, precision and scale.
+- **`IReadRepository<T>`** / `ReadRepositoryImpl<T>` for keyless view entities: filter, order, `AsNoTracking`, offset paging; read-only. `ModelBuilder.ConfigureReadOnlyView<T>(view, schema)` helper.
+- **DI**: `AddDynamicDataCoreProcedures(connectionStringName)` and `AddDynamicDataCoreReadRepositories()`.
+- **Raw-SQL lock**: Microsoft.CodeAnalysis.BannedApiAnalyzers + `BannedSymbols.txt` (RS0030 as error) and a reflection test.
+- Tests: unit tests plus Testcontainers (SQL Server 2022) integration tests (`Category=Integration`).
+
+### Changed
+
+- EF Core / Microsoft.Extensions.* version now follows the target framework: 9.x on `net8.0`, 10.x on `net10.0`.
+- `DynamicDataCore` package now depends on `Microsoft.Data.SqlClient` (ADO.NET driver, not an EF provider).
+
+---
+
 ## [2.0.0] - 2026-05-17
 
 ### Added

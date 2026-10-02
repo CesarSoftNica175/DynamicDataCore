@@ -13,21 +13,19 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and Run Tests (.NET ${{ matrix.dotnet }})
+    name: Build and Run Tests (net8.0 + net10.0)
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        dotnet: ['8.0.x', '10.0.x']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET ${{ matrix.dotnet }}
+      - name: Setup .NET 8 and 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ matrix.dotnet }}
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Restore dependencies
         run: dotnet restore
@@ -35,15 +33,18 @@ jobs:
       - name: Build solution
         run: dotnet build --configuration Release --no-restore
 
-      - name: Run tests with coverage
+      # One TFM per step: each run starts its own SQL Server Testcontainers container.
+      - name: Run tests (net8.0)
         run: |
-          dotnet test --configuration Release --no-build --verbosity normal \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./coverage
+          dotnet test src/DynamicDataCore.Tests -f net8.0 --configuration Release --no-build --verbosity normal             --collect:"XPlat Code Coverage"             --results-directory ./coverage/net8.0
+
+      - name: Run tests (net10.0)
+        run: |
+          dotnet test src/DynamicDataCore.Tests -f net10.0 --configuration Release --no-build --verbosity normal             --collect:"XPlat Code Coverage"             --results-directory ./coverage/net10.0
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
-        if: matrix.dotnet == '8.0.x'
+        if: always()
         with:
           name: coverage-report
           path: ./coverage

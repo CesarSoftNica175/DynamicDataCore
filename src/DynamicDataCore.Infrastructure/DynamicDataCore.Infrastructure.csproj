@@ -4,9 +4,10 @@
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <PackageId>DynamicDataCore</PackageId>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <Authors>César Adolfo Solís Alvarez</Authors>
-    <Company>NicaSoft</Company>
+    <Company>CelestialDevelopment</Company>
+    <Copyright>Copyright (c) 2025-2026 César Adolfo Solís Alvarez (CelestialDevelopment)</Copyright>
     <Description>Lightweight and extensible data access framework for .NET applications. Supports multi-database, keyset/cursor pagination, and async streaming via EF Core.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/CesarSoftNica175/DynamicDataCore</RepositoryUrl>
@@ -19,10 +20,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.11" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="$(EfCoreVersion)" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="$(EfCoreVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="$(MsExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="$(MsExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MsExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

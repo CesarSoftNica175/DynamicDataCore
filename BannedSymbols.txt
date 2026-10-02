@@ -1,0 +1,26 @@
+# Raw-SQL lock (Microsoft.CodeAnalysis.BannedApiAnalyzers, rule RS0030).
+# Published assemblies must never build SQL from strings. Stored procedures are invoked only through
+# SqlProcedureExecutor, the single place allowed to set CommandText (with a documented #pragma).
+
+# EF Core raw SQL on queries
+M:Microsoft.EntityFrameworkCore.RelationalQueryableExtensions.FromSqlRaw;Raw SQL is not allowed. Use ISqlProcedureExecutor or LINQ.
+M:Microsoft.EntityFrameworkCore.RelationalQueryableExtensions.FromSqlInterpolated;Raw SQL is not allowed. Use ISqlProcedureExecutor or LINQ.
+M:Microsoft.EntityFrameworkCore.RelationalQueryableExtensions.FromSql;Raw SQL is not allowed. Use ISqlProcedureExecutor or LINQ.
+
+# EF Core raw SQL on DatabaseFacade
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRaw;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlInterpolated;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlInterpolatedAsync;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSql;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlAsync;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.SqlQueryRaw;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+M:Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.SqlQuery;Raw SQL is not allowed. Use ISqlProcedureExecutor.
+
+# ADO.NET command text (any assignment, including object initializers)
+P:Microsoft.Data.SqlClient.SqlCommand.CommandText;Do not set CommandText. Only SqlProcedureExecutor may, via a documented pragma.
+P:System.Data.Common.DbCommand.CommandText;Do not set CommandText. Only SqlProcedureExecutor may, via a documented pragma.
+P:System.Data.IDbCommand.CommandText;Do not set CommandText. Only SqlProcedureExecutor may, via a documented pragma.
+M:Microsoft.Data.SqlClient.SqlCommand.#ctor(System.String);Command text constructors are not allowed.
+M:Microsoft.Data.SqlClient.SqlCommand.#ctor(System.String,Microsoft.Data.SqlClient.SqlConnection);Command text constructors are not allowed.
+M:Microsoft.Data.SqlClient.SqlCommand.#ctor(System.String,Microsoft.Data.SqlClient.SqlConnection,Microsoft.Data.SqlClient.SqlTransaction);Command text constructors are not allowed.
