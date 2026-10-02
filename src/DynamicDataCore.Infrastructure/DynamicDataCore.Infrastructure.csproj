@@ -4,7 +4,7 @@
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <PackageId>DynamicDataCore</PackageId>
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <Authors>César Adolfo Solís Alvarez</Authors>
     <Company>CelestialDevelopment</Company>
     <Copyright>Copyright (c) 2025-2026 César Adolfo Solís Alvarez (CelestialDevelopment)</Copyright>
