@@ -385,3 +385,11 @@ flowchart TD
 ## License
 
 MIT — free to use, modify, and distribute under the same terms.
+
+---
+
+## Creator & license
+
+DynamicDataCore is open source (MIT) and was created in Nicaragua by **César Adolfo Solís Alvarez** ([CelestialDevelopment](https://github.com/CesarSoftNica175)).
+
+Copyright (c) 2025-2026 César Adolfo Solís Alvarez (CelestialDevelopment). Released under the [MIT License](LICENSE.txt): you may use it freely, including in commercial projects, as long as the copyright notice is kept.

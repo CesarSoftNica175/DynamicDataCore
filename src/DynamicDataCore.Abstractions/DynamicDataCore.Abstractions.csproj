@@ -5,6 +5,12 @@
     <LangVersion>latest</LangVersion>
     <PackageId>DynamicDataCore.Abstractions</PackageId>
     <Version>2.1.0</Version>
+    <Authors>César Adolfo Solís Alvarez</Authors>
+    <Company>CelestialDevelopment</Company>
+    <Copyright>Copyright (c) 2025-2026 César Adolfo Solís Alvarez (CelestialDevelopment)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/CesarSoftNica175/DynamicDataCore</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CesarSoftNica175/DynamicDataCore</PackageProjectUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

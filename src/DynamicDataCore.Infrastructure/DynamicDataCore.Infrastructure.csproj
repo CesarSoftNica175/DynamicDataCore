@@ -6,7 +6,8 @@
     <PackageId>DynamicDataCore</PackageId>
     <Version>2.1.0</Version>
     <Authors>César Adolfo Solís Alvarez</Authors>
-    <Company>NicaSoft</Company>
+    <Company>CelestialDevelopment</Company>
+    <Copyright>Copyright (c) 2025-2026 César Adolfo Solís Alvarez (CelestialDevelopment)</Copyright>
     <Description>Lightweight and extensible data access framework for .NET applications. Supports multi-database, keyset/cursor pagination, and async streaming via EF Core.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/CesarSoftNica175/DynamicDataCore</RepositoryUrl>
