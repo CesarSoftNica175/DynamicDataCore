@@ -22,6 +22,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="$(EfCoreVersion)" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="$(EfCoreVersion)" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="$(MsExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="$(MsExtensionsVersion)" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MsExtensionsVersion)" />
   </ItemGroup>
 

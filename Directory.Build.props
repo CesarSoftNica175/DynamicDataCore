@@ -17,4 +17,14 @@
     <Content Remove="$(MSBuildThisFileDirectory)CLAUDE.md" />
     <Content Remove="$(MSBuildThisFileDirectory)AGENTS.md" />
   </ItemGroup>
+
+  <!-- Raw-SQL lock: published libraries may not use raw SQL / CommandText APIs (see BannedSymbols.txt).
+       Test projects are excluded so they can seed schemas with plain ADO.NET. -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'DynamicDataCore.Tests'">
+    <WarningsAsErrors>$(WarningsAsErrors);RS0030</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'DynamicDataCore.Tests'">
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.0.0" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
+  </ItemGroup>
 </Project>
