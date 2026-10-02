@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write   # Trusted Publishing de nuget.org (OIDC), sin API key
 
 jobs:
   publish:
@@ -60,15 +61,18 @@ jobs:
             dotnet nuget push "$package"               --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"               --api-key "${{ secrets.GITHUB_TOKEN }}"               --skip-duplicate
           done
 
-      # nuget.org es opcional y se activa solo si existe el secreto NUGET_API_KEY (alcance: solo estos 3 paquetes, con expiracion).
-      - name: Publish to nuget.org (if NUGET_API_KEY is set)
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      # nuget.org via Trusted Publishing (OIDC, sin API key). Opt-in: crear la variable de repo NUGET_PUBLISH=true
+      # DESPUES de registrar la politica en nuget.org (Trusted Publishing: owner, repo, workflow publish.yml).
+      - name: NuGet login (Trusted Publishing)
+        if: ${{ vars.NUGET_PUBLISH == true }}
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: CesarSoftNica
+
+      - name: Publish to nuget.org
+        if: ${{ vars.NUGET_PUBLISH == true }}
         run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "NUGET_API_KEY no configurado: se omite nuget.org (los paquetes quedan en GitHub Packages)."
-            exit 0
-          fi
           for package in ./artifacts/*.nupkg; do
-            dotnet nuget push "$package"               --source https://api.nuget.org/v3/index.json               --api-key "$NUGET_API_KEY"               --skip-duplicate
+            dotnet nuget push "$package"               --source https://api.nuget.org/v3/index.json               --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"               --skip-duplicate
           done
