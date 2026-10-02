@@ -1,4 +1,4 @@
-name: Publish DynamicDataCore Packages
+name: Publish DynamicDataCore Packages (nuget.org)
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   publish:
@@ -54,20 +53,17 @@ jobs:
           done
           echo "Package clean — no AI files found."
 
-      - name: Add GitHub Packages NuGet source
+      - name: Publish to nuget.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
-          dotnet nuget remove source github || true
-          dotnet nuget add source \
-            https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
-            --name github \
-            --username ${{ github.repository_owner }} \
-            --password ${{ secrets.DYNAMICDATACOREPACKAGETOKEN }} \
-            --store-password-in-clear-text
-
-      - name: Publish to GitHub Packages
-        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "ERROR: falta el secreto NUGET_API_KEY (API key de nuget.org con alcance solo a los 3 paquetes y fecha de expiracion)."
+            exit 1
+          fi
           for package in ./artifacts/*.nupkg; do
             dotnet nuget push "$package" \
-              --source github \
+              --source https://api.nuget.org/v3/index.json \
+              --api-key "$NUGET_API_KEY" \
               --skip-duplicate
           done
