@@ -78,6 +78,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
     // Test-only schema bootstrap; the test project is deliberately outside the raw-SQL analyzer.
     private async Task SeedAsync()
     {
+        await WaitUntilUsableAsync();
+
         await using var connection = new SqlConnection(ConnectionString);
         await connection.OpenAsync();
 
@@ -86,6 +88,29 @@ public sealed class SqlServerFixture : IAsyncLifetime
             await using var command = connection.CreateCommand();
             command.CommandText = batch;
             await command.ExecuteNonQueryAsync();
+        }
+    }
+
+    // The container's wait strategy returns once a trivial query works, which can be BEFORE tempdb is online
+    // ("Could not find database ID 2, name 'tempdb'"). A temp-table probe only succeeds when DDL really works.
+    private async Task WaitUntilUsableAsync()
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(90);
+        while (true)
+        {
+            try
+            {
+                await using var connection = new SqlConnection(ConnectionString);
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "CREATE TABLE #ready (i int); DROP TABLE #ready;";
+                await command.ExecuteNonQueryAsync();
+                return;
+            }
+            catch (SqlException) when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(500);
+            }
         }
     }
 
