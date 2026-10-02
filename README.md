@@ -1,12 +1,21 @@
 # DynamicDataCore
 
-[![NuGet](https://img.shields.io/badge/nuget-v2.0.0-blue)](https://github.com/CesarSoftNica175/DynamicDataCore/packages)
+[![NuGet](https://img.shields.io/badge/nuget-v2.1.0-blue)](https://github.com/CesarSoftNica175/DynamicDataCore/packages)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-purple)](https://dotnet.microsoft.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 Lightweight, extensible data access framework for .NET built on EF Core. Provides Unit of Work, generic repositories, four pagination strategies, async streaming, bulk operations, and multi-database support — all with full `CancellationToken` propagation.
 
 ---
+
+## What's new in v2.1.0
+
+Fully backward compatible with 2.0 (no existing public signature changed).
+
+- **Stored procedures, safely** — `ISqlProcedureExecutor` (`QueryAsync`, `QuerySingleOrDefaultAsync`, `ExecuteAsync`, `QueryMultipleAsync`). No API accepts SQL text; see [Stored procedures](#stored-procedures-v21).
+- **Read-only views** — `IReadRepository<T>` for keyless entities (`HasNoKey().ToView(...)`).
+- **Raw-SQL lock** — BannedApiAnalyzers (`BannedSymbols.txt`) plus a reflection test.
+- **EF Core 9.x on `net8.0`, EF Core 10.x on `net10.0`.**
 
 ## What's new in v2.0.0
 
@@ -37,7 +46,7 @@ The package is published to GitHub Packages. Add the source to your `nuget.confi
 ```
 
 ```bash
-dotnet add package DynamicDataCore --version 2.0.0
+dotnet add package DynamicDataCore --version 2.1.0
 ```
 
 ---
@@ -269,6 +278,64 @@ var meta = paged.PaginationMetadata; // CurrentPage, Total, LastPage, etc.
 
 ---
 
+## Stored procedures (v2.1)
+
+Registration reads the connection string from `IConfiguration` (`ConnectionStrings:Reporting`, user secrets, env vars...). Nothing is stored in the repo.
+
+```csharp
+services.AddDynamicDataCoreProcedures("Reporting");
+```
+
+The procedure is a validated `ProcedureName` (`schema.name`, ASCII letters/digits/underscore; anything else throws). Data travels only in typed parameters:
+
+```csharp
+var parameters = ProcedureParameters.Create()
+    .Structured("@Items", new TableValuedRows(
+        [new TableValueColumn("Id", SqlDbType.Int), new TableValueColumn("Label", SqlDbType.NVarChar, 50)],
+        items.Select(i => new object?[] { i.Id, i.Label })),
+        TableTypeName.Create("ddc.IdList"))                       // or a DataTable
+    .Input("@Prefix", SqlDbType.NVarChar, "web", size: 20)
+    .Output("@Count", SqlDbType.Int)
+    .Output("@Message", SqlDbType.NVarChar, size: 100)
+    .ReturnValue();
+
+// Rows affected + RETURN value + output parameters
+ProcedureResult r = await executor.ExecuteAsync(ProcedureName.Create("ddc.usp_Demo"), parameters, ct);
+int count = r.GetOutput<int>("@Count");   // r.ReturnValue, r.RowsAffected
+
+// Map one result set (types with settable properties, records, or scalars; columns match by name, case-insensitive)
+IReadOnlyList<Item> rows = await executor.QueryAsync<Item>(ProcedureName.Create("dbo.usp_Items"), parameters, ct);
+Item? one = await executor.QuerySingleOrDefaultAsync<Item>(name, parameters, ct);   // throws if more than one row
+
+// Several result sets, read in order
+await using var multi = await executor.QueryMultipleAsync(name, parameters, ct);
+var items = await multi.ReadAsync<Item>(ct);
+var summary = await multi.ReadSingleOrDefaultAsync<Summary>(ct);
+```
+
+Notes: always `CommandType.StoredProcedure`; mapping is built in (no Dapper, nothing third-party exposed); an empty `TableValuedRows` is sent as an empty table; output/return values are only available from `ExecuteAsync`.
+
+### Read-only views
+
+```csharp
+// In the consumer's DbContext
+protected override void OnModelCreating(ModelBuilder b) => b.ConfigureReadOnlyView<OrderSummary>("v_OrderSummary", "reporting");
+
+services.AddDynamicDataCoreReadRepositories();   // IReadRepository<> (needs IAppDbContext registered)
+
+var page = await repo.PageAsync(new OffsetPageRequest(1, 20), q => q.OrderBy(v => v.Id), v => v.Status == "Open", ct);
+```
+
+`IReadRepository<T>` offers `ListAsync`, `FirstOrDefaultAsync`, `CountAsync`, `AnyAsync` and `PageAsync` - always `AsNoTracking`, no write members.
+
+### Raw SQL is locked out
+
+`BannedSymbols.txt` bans `FromSqlRaw`/`FromSqlInterpolated`/`FromSql`, `ExecuteSql*`, `SqlQuery*` and `SqlCommand.CommandText` in the published projects (RS0030 is an error). The only exception is the one documented `#pragma` in `SqlProcedureExecutor`. A reflection test asserts that no public method takes a `string` parameter named `sql`, `commandText` or `query`.
+
+> Microsoft.Data.SqlClient is now a dependency of the `DynamicDataCore` package (driver only; the core still references no EF provider).
+
+---
+
 ## Architecture
 
 ```mermaid
@@ -300,6 +367,11 @@ flowchart TD
 | Implementation | `GenericRepositoryImpl<T>` | EF Core repository with all pagination strategies |
 | Implementation | `BaseGenericServiceImpl<T>` | Delegates to UoW + repository |
 | Implementation | `PooledDbContextProvider` | Resolves DbContexts via `IDbContextFactory<TContext>` |
+| Abstractions | `ISqlProcedureExecutor` | Stored-procedure execution (v2.1) |
+| Abstractions | `ProcedureName`, `ProcedureParameters` | Validated name + typed parameter builder (v2.1) |
+| Abstractions | `IReadRepository<T>` | Read-only access to keyless view entities (v2.1) |
+| Implementation | `SqlProcedureExecutor` | Microsoft.Data.SqlClient executor (v2.1) |
+| Implementation | `ReadRepositoryImpl<T>` | EF Core read-only repository (v2.1) |
 | Common | `OperationResult<T>` | Sealed record — unified success/failure envelope |
 | Common | `PaginationMetadata` | Sealed record — page metadata |
 | Common | `PagedResult<T>` | Sealed record — items + metadata + next cursor |
