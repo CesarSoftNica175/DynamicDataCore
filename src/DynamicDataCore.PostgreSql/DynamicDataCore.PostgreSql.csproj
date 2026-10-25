@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <PackageId>DynamicDataCore.PostgreSql</PackageId>
+    <Version>2.2.0</Version>
+    <Authors>César Adolfo Solís Alvarez</Authors>
+    <Company>CelestialDevelopment</Company>
+    <Copyright>Copyright (c) 2025-2026 César Adolfo Solís Alvarez (CelestialDevelopment)</Copyright>
+    <Description>PostgreSQL (Npgsql) routine executor for DynamicDataCore: calls functions and procedures with typed parameters, participates in the EF Core transaction of IUnitOfWork, and never accepts SQL text.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/CesarSoftNica175/DynamicDataCore</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CesarSoftNica175/DynamicDataCore</PackageProjectUrl>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>DynamicDataCore.PostgreSql</AssemblyName>
+    <RootNamespace>DynamicDataCore.PostgreSql</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Npgsql line follows the target framework, like EF Core: net8.0 -> 9.x, net10.0 -> 10.x. -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="9.0.5" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="Npgsql" Version="10.0.3" Condition="'$(TargetFramework)' == 'net10.0'" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="$(EfCoreVersion)" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MsExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DynamicDataCore.Abstractions\DynamicDataCore.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DynamicDataCore.PostgreSql.Tests" />
+  </ItemGroup>
+
+</Project>

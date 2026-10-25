@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.2.0] - Unreleased
+
+Backward compatible: no existing package or public signature changed. Adds a new package, `DynamicDataCore.PostgreSql`.
+
+### Added
+
+- **`DynamicDataCore.PostgreSql`** (net8.0 / net10.0, depends on Npgsql, not on SqlClient): `IPgRoutineExecutor` runs PostgreSQL **functions and procedures** with `QueryAsync<T>` (`SELECT * FROM fn(...)`), `QuerySingleOrDefaultAsync<T>`, `JsonAsync<T>` (a `json`/`jsonb`/`text` result deserialized with System.Text.Json), `ExecuteFunctionAsync` and `CallAsync` (`CALL proc(...)`).
+- **`PgParameters`**: typed builder (`Input`, `Json`, `Uuid`, `Text`, `Int`, `BigInt`, `Numeric`, `Bool`, `Date`, `Timestamp`, `TimestampTz`). Arguments are passed by **name** (`fn(p_name => @p_name)`); `Timestamp` forces `DateTimeKind.Unspecified` so a `Kind=Utc` value no longer breaks `timestamp without time zone`.
+- **`PgRoutineException`**: wraps `PostgresException` with `SqlState`, `Code` (the routine's `HINT` when set), `Detail`, `ConstraintName`, `IsBusinessRule` (`RAISE EXCEPTION`, SQLSTATE `P0001`) and `IsUniqueViolation` (`23505`).
+- `AddDynamicDataCorePostgreSql()` registers the executor (scoped). It runs on the connection **and the current transaction** of the scoped `IAppDbContext`, so calls made inside `IUnitOfWork.BeginTransactionAsync` commit or roll back together with EF Core changes.
+- Routines are identified by the existing validated `ProcedureName` (`schema.name`); no public API accepts SQL text. `BannedSymbols.txt` now also bans `NpgsqlCommand.CommandText`/constructors/`CreateCommand(string)`; `PgRoutineExecutor.cs` holds the single permitted `RS0030` suppression, enforced by `Rs0030SuppressionLockTests`.
+- Tests: `DynamicDataCore.PostgreSql.Tests` (14 unit + 11 integration with Testcontainers PostgreSQL 17, net8.0 and net10.0).
+
+### Changed
+
+- `Directory.Build.props`: the raw-SQL analyzer now excludes every `*.Tests` project instead of only `DynamicDataCore.Tests`.
+
+### Not included
+
+- Registration by logical database key for multi-database (`AddDatabase<T>`): the executor binds to the single scoped `IAppDbContext`.
+- `Output`/`InOut` parameters of procedures and multiple result sets.
+
 ## [2.1.2] - 2026-10-02
 
 Publishing only: fixes the publish workflow condition (the nuget.org step was skipped in 2.1.1). First release on nuget.org. No code changes.
