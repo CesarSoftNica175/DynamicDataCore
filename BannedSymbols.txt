@@ -24,3 +24,11 @@ P:System.Data.IDbCommand.CommandText;Do not set CommandText. Only SqlProcedureEx
 M:Microsoft.Data.SqlClient.SqlCommand.#ctor(System.String);Command text constructors are not allowed.
 M:Microsoft.Data.SqlClient.SqlCommand.#ctor(System.String,Microsoft.Data.SqlClient.SqlConnection);Command text constructors are not allowed.
 M:Microsoft.Data.SqlClient.SqlCommand.#ctor(System.String,Microsoft.Data.SqlClient.SqlConnection,Microsoft.Data.SqlClient.SqlTransaction);Command text constructors are not allowed.
+
+# Npgsql (DynamicDataCore.PostgreSql): only PgRoutineExecutor may set CommandText, via a documented pragma.
+P:Npgsql.NpgsqlCommand.CommandText;Do not set CommandText. Only PgRoutineExecutor may, via a documented pragma.
+M:Npgsql.NpgsqlCommand.#ctor(System.String);Command text constructors are not allowed.
+M:Npgsql.NpgsqlCommand.#ctor(System.String,Npgsql.NpgsqlConnection);Command text constructors are not allowed.
+M:Npgsql.NpgsqlCommand.#ctor(System.String,Npgsql.NpgsqlConnection,Npgsql.NpgsqlTransaction);Command text constructors are not allowed.
+M:Npgsql.NpgsqlConnection.CreateCommand(System.String);Command text is not allowed.
+M:Npgsql.NpgsqlDataSource.CreateCommand(System.String);Command text is not allowed.

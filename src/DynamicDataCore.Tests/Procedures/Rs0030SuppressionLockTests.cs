@@ -9,7 +9,8 @@ namespace DynamicDataCore.Tests.Procedures;
 /// </summary>
 public class Rs0030SuppressionLockTests
 {
-    private const string AllowedFile = "SqlProcedureExecutor.cs";
+    // One executor per provider; each may suppress RS0030 exactly once.
+    private static readonly string[] AllowedFiles = ["SqlProcedureExecutor.cs", "PgRoutineExecutor.cs"];
 
     private static readonly Regex PragmaDisable = new(
         @"#\s*pragma\s+warning\s+disable\b[^\r\n]*\bRS0030\b",
@@ -26,28 +27,30 @@ public class Rs0030SuppressionLockTests
         var sep = Path.DirectorySeparatorChar;
 
         var files = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(f => !f.Contains($"{sep}DynamicDataCore.Tests{sep}"))
+            .Where(f => !Path.GetRelativePath(srcRoot, f).Split(sep)[0].EndsWith(".Tests", StringComparison.Ordinal))
             .Where(f => !f.Contains($"{sep}obj{sep}") && !f.Contains($"{sep}bin{sep}"))
             .ToList();
 
         Assert.NotEmpty(files);
 
         var offenders = new List<string>();
-        var allowedCount = 0;
+        var allowedCounts = AllowedFiles.ToDictionary(n => n, _ => 0);
         foreach (var file in files)
         {
             var text = File.ReadAllText(file);
             var pragmas = PragmaDisable.Matches(text).Count;
             var attrs = SuppressMessage.Matches(text).Count;
+            var name = Path.GetFileName(file);
 
-            if (Path.GetFileName(file) == AllowedFile && attrs == 0)
-                allowedCount += pragmas;
+            if (allowedCounts.ContainsKey(name) && attrs == 0)
+                allowedCounts[name] += pragmas;
             else if (pragmas + attrs > 0)
                 offenders.Add($"{Path.GetRelativePath(srcRoot, file)} ({pragmas} pragma, {attrs} SuppressMessage)");
         }
 
         Assert.True(offenders.Count == 0, "RS0030 suppression outside the allowed place: " + string.Join("; ", offenders));
-        Assert.True(allowedCount == 1, $"{AllowedFile} must contain exactly one '#pragma warning disable RS0030' but has {allowedCount}.");
+        foreach (var (name, count) in allowedCounts)
+            Assert.True(count == 1, $"{name} must contain exactly one '#pragma warning disable RS0030' but has {count}.");
     }
 
     private static string FindRepoRoot()
